@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { GameCard } from "@/components/GameCard";
 import { useToast } from "@/hooks/use-toast";
+import { UploadGameButton } from "@/components/UploadGameButton";
 
 const FEATURED_GAMES = [
   {
@@ -52,6 +53,9 @@ const Index = () => {
           <p className="mt-4 text-gray-400 md:text-lg">
             Experience the future of gaming with our collection of cyberpunk-themed games
           </p>
+          <div className="mt-8">
+            <UploadGameButton />
+          </div>
         </div>
 
         {/* Featured Games */}
