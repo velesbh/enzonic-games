@@ -35,4 +35,17 @@ export const games: Game[] = [
     publisher: "Enzonic Games",
     tags: ["Fighting", "Multiplayer", "Arcade"],
   },
+  {
+    id: "scratch-adventure",
+    title: "Scratch Adventure",
+    description: "An exciting interactive game created with Scratch.",
+    imageUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f",
+    type: "play",
+    actionUrl: "https://scratch.mit.edu/projects/1096681549/embed",
+    reviews: [],
+    releaseDate: "2024-03-01",
+    developer: "Scratch Creator",
+    publisher: "Enzonic Games",
+    tags: ["Adventure", "Interactive", "Scratch"],
+  },
 ];

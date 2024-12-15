@@ -27,6 +27,10 @@ const GameDetails = () => {
 
   const handleAction = () => {
     if (game.type === "play") {
+      if (game.actionUrl.includes('scratch.mit.edu')) {
+        // For Scratch games, we'll show them directly on the page
+        return;
+      }
       window.location.href = game.actionUrl;
     } else {
       toast({
@@ -53,11 +57,24 @@ const GameDetails = () => {
         <div className="glass-panel p-6">
           <div className="grid gap-8 md:grid-cols-2">
             <div className="relative aspect-video overflow-hidden rounded-lg">
-              <img
-                src={game.imageUrl}
-                alt={game.title}
-                className="h-full w-full object-cover"
-              />
+              {game.actionUrl.includes('scratch.mit.edu') ? (
+                <iframe
+                  src={game.actionUrl}
+                  allowTransparency={true}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="no"
+                  allowFullScreen
+                  className="absolute inset-0"
+                />
+              ) : (
+                <img
+                  src={game.imageUrl}
+                  alt={game.title}
+                  className="h-full w-full object-cover"
+                />
+              )}
             </div>
 
             <div>
@@ -90,17 +107,19 @@ const GameDetails = () => {
                 ))}
               </div>
 
-              <Button
-                onClick={handleAction}
-                className="w-full bg-neon-emerald text-black hover:bg-neon-emerald/90"
-              >
-                {game.type === "play" ? (
-                  <Play className="mr-2 h-4 w-4" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {game.type === "play" ? "Play Now" : "Download"}
-              </Button>
+              {!game.actionUrl.includes('scratch.mit.edu') && (
+                <Button
+                  onClick={handleAction}
+                  className="w-full bg-neon-emerald text-black hover:bg-neon-emerald/90"
+                >
+                  {game.type === "play" ? (
+                    <Play className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  {game.type === "play" ? "Play Now" : "Download"}
+                </Button>
+              )}
             </div>
           </div>
 
