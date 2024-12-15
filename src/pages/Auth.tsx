@@ -11,7 +11,7 @@ const AuthPage = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session) {
+        if (event === 'SIGNED_IN' && session) {
           navigate("/");
         }
       }
@@ -21,7 +21,7 @@ const AuthPage = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900">
       <Header />
       <div className="container mx-auto pt-24">
         <div className="mx-auto max-w-md">
@@ -38,11 +38,21 @@ const AuthPage = () => {
                     colors: {
                       brand: '#10b981',
                       brandAccent: '#059669',
+                      inputBackground: 'transparent',
+                      inputText: 'white',
+                      inputPlaceholder: 'gray',
                     },
                   },
                 },
+                className: {
+                  container: 'auth-container',
+                  button: 'auth-button',
+                  input: 'auth-input',
+                },
               }}
               providers={[]}
+              redirectTo={window.location.origin}
+              onlyThirdPartyProviders={false}
             />
           </div>
         </div>
