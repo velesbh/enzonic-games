@@ -1,9 +1,22 @@
 import { useState } from "react";
-import { Menu, X, Gamepad, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Menu, X, Gamepad, User, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSessionContext } from "@supabase/auth-helpers-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { session } = useSessionContext();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  const handleSignIn = () => {
+    navigate("/auth");
+  };
 
   return (
     <header className="fixed top-0 z-50 w-full bg-black/50 backdrop-blur-md">
@@ -34,10 +47,23 @@ export const Header = () => {
         </nav>
 
         <div className="flex items-center space-x-4">
-          <button className="hidden md:flex items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20">
-            <User className="h-5 w-5" />
-            <span>Sign In</span>
-          </button>
+          {session ? (
+            <button
+              onClick={handleSignOut}
+              className="hidden md:flex items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sign Out</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleSignIn}
+              className="hidden md:flex items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20"
+            >
+              <User className="h-5 w-5" />
+              <span>Sign In</span>
+            </button>
+          )}
 
           <button
             className="md:hidden text-gray-300"
@@ -81,10 +107,29 @@ export const Header = () => {
                 </Link>
               </li>
               <li>
-                <button className="flex w-full items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20">
-                  <User className="h-5 w-5" />
-                  <span>Sign In</span>
-                </button>
+                {session ? (
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex w-full items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Sign Out</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleSignIn();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex w-full items-center space-x-2 rounded-full bg-neon-emerald/10 px-4 py-2 text-neon-emerald hover:bg-neon-emerald/20"
+                  >
+                    <User className="h-5 w-5" />
+                    <span>Sign In</span>
+                  </button>
+                )}
               </li>
             </ul>
           </nav>
