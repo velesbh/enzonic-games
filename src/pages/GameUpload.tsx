@@ -51,12 +51,12 @@ const GameUpload = () => {
         .from("game-files")
         .getPublicUrl(fileName);
 
-      // Create game record in database
+      // Create game record in database with the correct game_type
       const { error: dbError } = await supabase.from("games").insert({
         title,
         description,
         game_url: urlData.publicUrl,
-        game_type: "upload",
+        game_type: "play", // Using 'play' as the game type since it's an allowed value
         user_id: session.user.id,
       });
 
