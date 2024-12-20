@@ -44,6 +44,8 @@ const GameDetails = () => {
     );
   }
 
+  const isScratchGame = game.game_url?.toLowerCase().endsWith('.sb3');
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -60,18 +62,27 @@ const GameDetails = () => {
         <div className="glass-panel p-6">
           <div className="grid gap-8 md:grid-cols-2">
             <div className="relative aspect-video overflow-hidden rounded-lg">
-              <img
-                src={game.thumbnail_url || '/placeholder.svg'}
-                alt={game.title}
-                className="h-full w-full object-cover"
-              />
+              {isScratchGame ? (
+                <iframe
+                  src={`https://turbowarp.org/embed.html?project_url=${encodeURIComponent(game.game_url || '')}`}
+                  className="h-full w-full border-0"
+                  allowFullScreen
+                  allow="gamepad *;"
+                />
+              ) : (
+                <img
+                  src={game.thumbnail_url || '/placeholder.svg'}
+                  alt={game.title}
+                  className="h-full w-full object-cover"
+                />
+              )}
             </div>
 
             <div>
               <h1 className="mb-2 text-3xl font-bold neon-text">{game.title}</h1>
               <p className="mb-4 text-gray-400">{game.description}</p>
               
-              {game.game_url && (
+              {game.game_url && !isScratchGame && (
                 <Button 
                   onClick={() => window.open(game.game_url, '_blank')}
                   className="w-full bg-neon-emerald text-black hover:bg-neon-emerald/90"
