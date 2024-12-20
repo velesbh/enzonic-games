@@ -1,13 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSession } from "@supabase/auth-helpers-react";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const session = useSession();
+  const queryClient = useQueryClient();
 
   const { data: game, isLoading } = useQuery({
     queryKey: ['game', id],
@@ -22,6 +27,39 @@ const GameDetails = () => {
       return data;
     },
   });
+
+  const deleteGameMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('games')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Game deleted",
+        description: "The game has been successfully deleted",
+      });
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+      navigate('/games');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the game",
+        variant: "destructive",
+      });
+      console.error('Error deleting game:', error);
+    },
+  });
+
+  const handleDeleteGame = () => {
+    if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+      deleteGameMutation.mutate();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -45,6 +83,7 @@ const GameDetails = () => {
   }
 
   const isScratchGame = game.game_url?.toLowerCase().endsWith('.sb3');
+  const isOwner = session?.user?.id === game.user_id;
 
   return (
     <div className="min-h-screen">
@@ -79,7 +118,19 @@ const GameDetails = () => {
             </div>
 
             <div>
-              <h1 className="mb-2 text-3xl font-bold neon-text">{game.title}</h1>
+              <div className="flex items-center justify-between">
+                <h1 className="mb-2 text-3xl font-bold neon-text">{game.title}</h1>
+                {isOwner && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={handleDeleteGame}
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
               <p className="mb-4 text-gray-400">{game.description}</p>
               
               {game.game_url && !isScratchGame && (
