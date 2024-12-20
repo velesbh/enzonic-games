@@ -3,16 +3,28 @@ import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { GameCard } from "@/components/GameCard";
-import { games } from "@/config/games";
 import { Header } from "@/components/Header";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Games = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: games = [], isLoading } = useQuery({
+    queryKey: ['games'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('games')
+        .select('*');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const filteredGames = games.filter((game) =>
     game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    game.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    game.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    (game.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -34,18 +46,24 @@ const Games = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredGames.map((game) => (
-            <Link key={game.id} to={`/games/${game.id}`}>
-              <GameCard
-                title={game.title}
-                description={game.description}
-                imageUrl={game.imageUrl}
-                onPlay={() => {}}
-              />
-            </Link>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center text-gray-400">Loading games...</div>
+        ) : filteredGames.length === 0 ? (
+          <div className="text-center text-gray-400">No games found</div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredGames.map((game) => (
+              <Link key={game.id} to={`/games/${game.id}`}>
+                <GameCard
+                  title={game.title}
+                  description={game.description || ''}
+                  imageUrl={game.thumbnail_url || '/placeholder.svg'}
+                  onPlay={() => {}}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
