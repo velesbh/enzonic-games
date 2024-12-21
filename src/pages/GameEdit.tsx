@@ -123,12 +123,29 @@ const GameEdit = () => {
     }
 
     try {
-      const { error } = await supabase
+      // First, delete all reactions for this game
+      const { error: reactionsError } = await supabase
+        .from('game_reactions')
+        .delete()
+        .eq('game_id', id);
+
+      if (reactionsError) throw reactionsError;
+
+      // Then, delete all favorites for this game
+      const { error: favoritesError } = await supabase
+        .from('game_favorites')
+        .delete()
+        .eq('game_id', id);
+
+      if (favoritesError) throw favoritesError;
+
+      // Finally, delete the game itself
+      const { error: gameError } = await supabase
         .from('games')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (gameError) throw gameError;
 
       toast({
         title: "Success",
