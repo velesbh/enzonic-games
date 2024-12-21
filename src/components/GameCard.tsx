@@ -1,13 +1,132 @@
-import { Play } from "lucide-react";
+import { Heart, ThumbsDown, ThumbsUp, Play } from "lucide-react";
+import { Button } from "./ui/button";
+import { useSession } from "@supabase/auth-helpers-react";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GameCardProps {
+  id: string;
   title: string;
   description: string;
   imageUrl: string;
   onPlay: () => void;
+  initialLikes?: number;
+  initialDislikes?: number;
+  initialIsFavorited?: boolean;
+  initialUserReaction?: 'like' | 'dislike' | null;
 }
 
-export const GameCard = ({ title, description, imageUrl, onPlay }: GameCardProps) => {
+export const GameCard = ({ 
+  id,
+  title, 
+  description, 
+  imageUrl, 
+  onPlay,
+  initialLikes = 0,
+  initialDislikes = 0,
+  initialIsFavorited = false,
+  initialUserReaction = null
+}: GameCardProps) => {
+  const session = useSession();
+  const { toast } = useToast();
+  const [likes, setLikes] = useState(initialLikes);
+  const [dislikes, setDislikes] = useState(initialDislikes);
+  const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
+  const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(initialUserReaction);
+
+  const handleReaction = async (type: 'like' | 'dislike') => {
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to react to games",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (userReaction === type) {
+        // Remove reaction
+        await supabase
+          .from('game_reactions')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('game_id', id);
+        
+        setUserReaction(null);
+        if (type === 'like') setLikes(prev => prev - 1);
+        else setDislikes(prev => prev - 1);
+      } else {
+        // If there was a previous reaction, remove it first
+        if (userReaction) {
+          if (userReaction === 'like') setLikes(prev => prev - 1);
+          else setDislikes(prev => prev - 1);
+        }
+
+        // Add new reaction
+        await supabase
+          .from('game_reactions')
+          .upsert({
+            user_id: session.user.id,
+            game_id: id,
+            reaction_type: type,
+          });
+
+        setUserReaction(type);
+        if (type === 'like') setLikes(prev => prev + 1);
+        else setDislikes(prev => prev - 1);
+      }
+    } catch (error) {
+      console.error('Error handling reaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update reaction",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFavorite = async () => {
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to favorite games",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isFavorited) {
+        await supabase
+          .from('game_favorites')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('game_id', id);
+      } else {
+        await supabase
+          .from('game_favorites')
+          .insert({
+            user_id: session.user.id,
+            game_id: id,
+          });
+      }
+      setIsFavorited(!isFavorited);
+      toast({
+        title: isFavorited ? "Removed from favorites" : "Added to favorites",
+        description: isFavorited ? "Game removed from your favorites" : "Game added to your favorites",
+      });
+    } catch (error) {
+      console.error('Error handling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorites",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="game-card group">
       <div className="relative aspect-video overflow-hidden rounded-lg">
@@ -26,6 +145,35 @@ export const GameCard = ({ title, description, imageUrl, onPlay }: GameCardProps
       <div className="mt-4">
         <h3 className="text-lg font-bold text-gray-100">{title}</h3>
         <p className="mt-1 text-sm text-gray-400">{description}</p>
+        <div className="mt-4 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleReaction('like')}
+            className={userReaction === 'like' ? 'text-green-500' : ''}
+          >
+            <ThumbsUp className="mr-1 h-4 w-4" />
+            {likes}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleReaction('dislike')}
+            className={userReaction === 'dislike' ? 'text-red-500' : ''}
+          >
+            <ThumbsDown className="mr-1 h-4 w-4" />
+            {dislikes}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleFavorite}
+            className={isFavorited ? 'text-pink-500' : ''}
+          >
+            <Heart className="mr-1 h-4 w-4" fill={isFavorited ? 'currentColor' : 'none'} />
+            {isFavorited ? 'Favorited' : 'Favorite'}
+          </Button>
+        </div>
       </div>
     </div>
   );

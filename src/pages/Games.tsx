@@ -6,19 +6,38 @@ import { GameCard } from "@/components/GameCard";
 import { Header } from "@/components/Header";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@supabase/auth-helpers-react";
 
 const Games = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const session = useSession();
 
   const { data: games = [], isLoading } = useQuery({
     queryKey: ['games'],
     queryFn: async () => {
+      // Fetch games with reaction counts and user's reactions
       const { data, error } = await supabase
         .from('games')
-        .select('*');
+        .select(`
+          *,
+          reactions:game_reactions(
+            reaction_type,
+            user_id
+          ),
+          favorites:game_favorites(
+            user_id
+          )
+        `);
       
       if (error) throw error;
-      return data;
+
+      return data.map(game => ({
+        ...game,
+        likes: game.reactions?.filter(r => r.reaction_type === 'like').length || 0,
+        dislikes: game.reactions?.filter(r => r.reaction_type === 'dislike').length || 0,
+        userReaction: game.reactions?.find(r => r.user_id === session?.user?.id)?.reaction_type || null,
+        isFavorited: game.favorites?.some(f => f.user_id === session?.user?.id) || false,
+      }));
     },
   });
 
@@ -27,13 +46,41 @@ const Games = () => {
     (game.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
+  // Sort games by likes for the featured section
+  const featuredGames = [...games]
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 4);
+
   return (
     <div className="min-h-screen">
       <Header />
       
       <main className="container mx-auto pt-24">
+        {featuredGames.length > 0 && (
+          <div className="mb-12">
+            <h2 className="mb-6 text-2xl font-bold neon-text">Featured Games</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {featuredGames.map((game) => (
+                <Link key={game.id} to={`/games/${game.id}`}>
+                  <GameCard
+                    id={game.id}
+                    title={game.title}
+                    description={game.description || ''}
+                    imageUrl={game.thumbnail_url || '/placeholder.svg'}
+                    onPlay={() => {}}
+                    initialLikes={game.likes}
+                    initialDislikes={game.dislikes}
+                    initialIsFavorited={game.isFavorited}
+                    initialUserReaction={game.userReaction}
+                  />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
-          <h1 className="mb-4 text-4xl font-bold neon-text">Games</h1>
+          <h1 className="mb-4 text-4xl font-bold neon-text">All Games</h1>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <Input
@@ -55,10 +102,15 @@ const Games = () => {
             {filteredGames.map((game) => (
               <Link key={game.id} to={`/games/${game.id}`}>
                 <GameCard
+                  id={game.id}
                   title={game.title}
                   description={game.description || ''}
                   imageUrl={game.thumbnail_url || '/placeholder.svg'}
                   onPlay={() => {}}
+                  initialLikes={game.likes}
+                  initialDislikes={game.dislikes}
+                  initialIsFavorited={game.isFavorited}
+                  initialUserReaction={game.userReaction}
                 />
               </Link>
             ))}
