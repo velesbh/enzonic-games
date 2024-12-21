@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Games from "./pages/Games";
 import GameDetails from "./pages/GameDetails";
+import GameEdit from "./pages/GameEdit";
 import Auth from "./pages/Auth";
 import GameUpload from "./pages/GameUpload";
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/games" element={<Games />} />
             <Route path="/games/:id" element={<GameDetails />} />
+            <Route path="/games/:id/edit" element={<GameEdit />} />
             <Route path="/games/upload" element={<GameUpload />} />
             <Route path="/auth" element={<Auth />} />
           </Routes>

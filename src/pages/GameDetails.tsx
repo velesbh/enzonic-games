@@ -122,12 +122,11 @@ const GameDetails = () => {
                 <h1 className="mb-2 text-3xl font-bold neon-text">{game.title}</h1>
                 {isOwner && (
                   <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={handleDeleteGame}
-                    className="h-8 w-8"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/games/${id}/edit`)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    Edit Game
                   </Button>
                 )}
               </div>

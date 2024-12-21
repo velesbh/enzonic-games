@@ -2,49 +2,48 @@ import { Header } from "@/components/Header";
 import { GameCard } from "@/components/GameCard";
 import { useToast } from "@/hooks/use-toast";
 import { UploadGameButton } from "@/components/UploadGameButton";
-
-const FEATURED_GAMES = [
-  {
-    id: 1,
-    title: "Cyber Runner",
-    description: "Fast-paced cyberpunk racing game",
-    imageUrl: "/placeholder.svg",
-  },
-  {
-    id: 2,
-    title: "Neon Fighters",
-    description: "Competitive fighting in a neon world",
-    imageUrl: "/placeholder.svg",
-  },
-  {
-    id: 3,
-    title: "Digital Dreams",
-    description: "Explore a virtual reality landscape",
-    imageUrl: "/placeholder.svg",
-  },
-  {
-    id: 4,
-    title: "Tech Wars",
-    description: "Strategic battles in cyberspace",
-    imageUrl: "/placeholder.svg",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
 
-  const handlePlayGame = (gameTitle: string) => {
-    toast({
-      title: "Starting game...",
-      description: `Launching ${gameTitle}`,
-    });
-  };
+  const { data: featuredGames = [], isLoading } = useQuery({
+    queryKey: ['featured-games'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('games')
+        .select(`
+          *,
+          reactions:game_reactions(
+            reaction_type,
+            user_id
+          ),
+          favorites:game_favorites(
+            user_id
+          )
+        `);
+      
+      if (error) throw error;
+
+      // Process and sort games by likes
+      const processedGames = data.map(game => ({
+        ...game,
+        likes: game.reactions?.filter(r => r.reaction_type === 'like').length || 0,
+        dislikes: game.reactions?.filter(r => r.reaction_type === 'dislike').length || 0,
+      }));
+
+      return processedGames
+        .sort((a, b) => b.likes - a.likes)
+        .slice(0, 4);
+    },
+  });
 
   return (
     <div className="min-h-screen">
       <Header />
       
-      {/* Hero Section */}
       <section className="container mx-auto pt-24">
         <div className="glass-panel mb-12 p-8 text-center">
           <h1 className="text-4xl font-bold neon-text md:text-6xl">
@@ -61,17 +60,27 @@ const Index = () => {
         {/* Featured Games */}
         <div className="mb-12">
           <h2 className="mb-6 text-2xl font-bold text-gray-100">Featured Games</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {FEATURED_GAMES.map((game) => (
-              <GameCard
-                key={game.id}
-                title={game.title}
-                description={game.description}
-                imageUrl={game.imageUrl}
-                onPlay={() => handlePlayGame(game.title)}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center text-gray-400">Loading featured games...</div>
+          ) : featuredGames.length === 0 ? (
+            <div className="text-center text-gray-400">No games available yet</div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {featuredGames.map((game) => (
+                <Link key={game.id} to={`/games/${game.id}`}>
+                  <GameCard
+                    id={game.id}
+                    title={game.title}
+                    description={game.description || ''}
+                    imageUrl={game.thumbnail_url || '/placeholder.svg'}
+                    onPlay={() => {}}
+                    initialLikes={game.likes}
+                    initialDislikes={game.dislikes}
+                  />
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Categories */}
