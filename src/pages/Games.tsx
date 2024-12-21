@@ -8,6 +8,26 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
 
+type ReactionType = 'like' | 'dislike';
+
+interface GameWithReactions {
+  id: string;
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  reactions: {
+    reaction_type: string;
+    user_id: string;
+  }[];
+  favorites: {
+    user_id: string;
+  }[];
+  likes: number;
+  dislikes: number;
+  userReaction: ReactionType | null;
+  isFavorited: boolean;
+}
+
 const Games = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const session = useSession();
@@ -15,7 +35,6 @@ const Games = () => {
   const { data: games = [], isLoading } = useQuery({
     queryKey: ['games'],
     queryFn: async () => {
-      // Fetch games with reaction counts and user's reactions
       const { data, error } = await supabase
         .from('games')
         .select(`
@@ -31,11 +50,11 @@ const Games = () => {
       
       if (error) throw error;
 
-      return data.map(game => ({
+      return data.map((game): GameWithReactions => ({
         ...game,
         likes: game.reactions?.filter(r => r.reaction_type === 'like').length || 0,
         dislikes: game.reactions?.filter(r => r.reaction_type === 'dislike').length || 0,
-        userReaction: game.reactions?.find(r => r.user_id === session?.user?.id)?.reaction_type || null,
+        userReaction: game.reactions?.find(r => r.user_id === session?.user?.id)?.reaction_type as ReactionType | null || null,
         isFavorited: game.favorites?.some(f => f.user_id === session?.user?.id) || false,
       }));
     },
