@@ -13,9 +13,11 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profiles: {
-    username: string | null;
-    avatar_url: string | null;
+  user: {
+    profile: {
+      username: string | null;
+      avatar_url: string | null;
+    };
   };
 }
 
@@ -36,9 +38,11 @@ export const CommentSection = ({ gameId }: CommentSectionProps) => {
         .from('comments')
         .select(`
           *,
-          profiles (
-            username,
-            avatar_url
+          user:user_id (
+            profile:profiles (
+              username,
+              avatar_url
+            )
           )
         `)
         .eq('game_id', gameId)
@@ -134,15 +138,15 @@ export const CommentSection = ({ gameId }: CommentSectionProps) => {
           comments.map((comment) => (
             <div key={comment.id} className="flex gap-4 p-4 rounded-lg bg-gray-800/50">
               <Avatar>
-                <AvatarImage src={comment.profiles.avatar_url || undefined} />
+                <AvatarImage src={comment.user.profile.avatar_url || undefined} />
                 <AvatarFallback>
-                  {comment.profiles.username?.[0]?.toUpperCase() || 'U'}
+                  {comment.user.profile.username?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-200">
-                    {comment.profiles.username || 'Anonymous'}
+                    {comment.user.profile.username || 'Anonymous'}
                   </span>
                   <span className="text-sm text-gray-400">
                     {new Date(comment.created_at).toLocaleDateString()}
