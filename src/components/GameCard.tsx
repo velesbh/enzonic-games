@@ -13,7 +13,6 @@ interface GameCardProps {
   onPlay: () => void;
   initialLikes?: number;
   initialDislikes?: number;
-  initialIsFavorited?: boolean;
   initialUserReaction?: 'like' | 'dislike' | null;
 }
 
@@ -25,14 +24,12 @@ export const GameCard = ({
   onPlay,
   initialLikes = 0,
   initialDislikes = 0,
-  initialIsFavorited = false,
   initialUserReaction = null
 }: GameCardProps) => {
   const session = useSession();
   const { toast } = useToast();
   const [likes, setLikes] = useState(initialLikes);
   const [dislikes, setDislikes] = useState(initialDislikes);
-  const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
   const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(initialUserReaction);
 
   const handleReaction = async (type: 'like' | 'dislike') => {
@@ -75,53 +72,13 @@ export const GameCard = ({
 
         setUserReaction(type);
         if (type === 'like') setLikes(prev => prev + 1);
-        else setDislikes(prev => prev - 1);
+        else setDislikes(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error handling reaction:', error);
       toast({
         title: "Error",
         description: "Failed to update reaction",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleFavorite = async () => {
-    if (!session) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to favorite games",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      if (isFavorited) {
-        await supabase
-          .from('game_favorites')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('game_id', id);
-      } else {
-        await supabase
-          .from('game_favorites')
-          .insert({
-            user_id: session.user.id,
-            game_id: id,
-          });
-      }
-      setIsFavorited(!isFavorited);
-      toast({
-        title: isFavorited ? "Removed from favorites" : "Added to favorites",
-        description: isFavorited ? "Game removed from your favorites" : "Game added to your favorites",
-      });
-    } catch (error) {
-      console.error('Error handling favorite:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update favorites",
         variant: "destructive",
       });
     }
@@ -163,15 +120,6 @@ export const GameCard = ({
           >
             <ThumbsDown className="mr-1 h-4 w-4" />
             {dislikes}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFavorite}
-            className={isFavorited ? 'text-pink-500' : ''}
-          >
-            <Heart className="mr-1 h-4 w-4" fill={isFavorited ? 'currentColor' : 'none'} />
-            {isFavorited ? 'Favorited' : 'Favorite'}
           </Button>
         </div>
       </div>

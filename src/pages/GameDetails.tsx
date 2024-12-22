@@ -1,147 +1,119 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@supabase/auth-helpers-react";
+import { ArrowLeft, Download, Play } from "lucide-react";
+import { CommentSection } from "@/components/CommentSection";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const session = useSession();
-  const queryClient = useQueryClient();
 
   const { data: game, isLoading } = useQuery({
     queryKey: ['game', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('games')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            username,
+            avatar_url
+          )
+        `)
         .eq('id', id)
-        .maybeSingle();
-      
+        .single();
+
       if (error) throw error;
       return data;
     },
   });
 
-  const deleteGameMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('games')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Game deleted",
-        description: "The game has been successfully deleted",
-      });
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      navigate('/games');
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete the game",
-        variant: "destructive",
-      });
-      console.error('Error deleting game:', error);
-    },
-  });
-
-  const handleDeleteGame = () => {
-    if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
-      deleteGameMutation.mutate();
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center text-gray-400">Loading game details...</div>
+      <div className="min-h-screen">
+        <Header />
+        <main className="container mx-auto pt-24">
+          <div className="text-center">Loading...</div>
+        </main>
       </div>
     );
   }
 
   if (!game) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Game not found</h1>
-          <Button onClick={() => navigate("/games")} className="mt-4">
-            Back to Games
-          </Button>
-        </div>
+      <div className="min-h-screen">
+        <Header />
+        <main className="container mx-auto pt-24">
+          <div className="text-center">Game not found</div>
+        </main>
       </div>
     );
   }
 
-  const isScratchGame = game.game_url?.toLowerCase().endsWith('.sb3');
-  const isOwner = session?.user?.id === game.user_id;
-
   return (
     <div className="min-h-screen">
       <Header />
-      
       <main className="container mx-auto pt-24">
         <button
-          onClick={() => navigate("/games")}
+          onClick={() => navigate('/games')}
           className="mb-6 flex items-center text-gray-400 hover:text-neon-emerald"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Games
         </button>
 
-        <div className="glass-panel p-6">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="relative aspect-video overflow-hidden rounded-lg">
-              {isScratchGame ? (
-                <iframe
-                  src={`https://turbowarp.org/embed.html?project_url=${encodeURIComponent(game.game_url || '')}`}
-                  className="h-full w-full border-0"
-                  allowFullScreen
-                  allow="gamepad *;"
-                />
-              ) : (
-                <img
-                  src={game.thumbnail_url || '/placeholder.svg'}
-                  alt={game.title}
-                  className="h-full w-full object-cover"
-                />
-              )}
+        <div className="grid gap-8 md:grid-cols-2">
+          <div>
+            <img
+              src={game.thumbnail_url || '/placeholder.svg'}
+              alt={game.title}
+              className="w-full rounded-lg object-cover"
+            />
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-100">{game.title}</h1>
+              <p className="mt-2 text-gray-400">
+                By {game.profiles.username || 'Anonymous'}
+              </p>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <h1 className="mb-2 text-3xl font-bold neon-text">{game.title}</h1>
-                {isOwner && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/games/${id}/edit`)}
-                  >
-                    Edit Game
-                  </Button>
-                )}
-              </div>
-              <p className="mb-4 text-gray-400">{game.description}</p>
-              
-              {game.game_url && !isScratchGame && (
-                <Button 
-                  onClick={() => window.open(game.game_url, '_blank')}
-                  className="w-full bg-neon-emerald text-black hover:bg-neon-emerald/90"
+            <p className="text-gray-300">{game.description}</p>
+
+            <div className="flex gap-4">
+              {game.game_type === 'download' ? (
+                <Button asChild>
+                  <a href={game.game_url} download>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Game
+                  </a>
+                </Button>
+              ) : (
+                <Button onClick={() => window.open(game.game_url, '_blank')}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Play Game
+                </Button>
+              )}
+
+              {session?.user?.id === game.user_id && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/games/${id}/edit`)}
                 >
-                  Play Now
+                  Edit Game
                 </Button>
               )}
             </div>
           </div>
+        </div>
+
+        <div className="mt-12">
+          <CommentSection gameId={id!} />
         </div>
       </main>
     </div>
