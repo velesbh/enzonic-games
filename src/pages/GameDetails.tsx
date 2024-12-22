@@ -25,7 +25,7 @@ const GameDetails = () => {
           )
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -79,7 +79,7 @@ const GameDetails = () => {
             <div>
               <h1 className="text-4xl font-bold text-gray-100">{game.title}</h1>
               <p className="mt-2 text-gray-400">
-                By {game.profiles.username || 'Anonymous'}
+                By {game.profiles?.username || 'Anonymous'}
               </p>
             </div>
 
