@@ -38,18 +38,16 @@ export const CommentSection = ({ gameId }: CommentSectionProps) => {
         .from('comments')
         .select(`
           *,
-          user:user_id (
-            profile:profiles (
-              username,
-              avatar_url
-            )
+          user:profiles!comments_user_id_fkey (
+            username,
+            avatar_url
           )
         `)
         .eq('game_id', gameId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Comment[];
+      return data as unknown as Comment[];
     },
   });
 
@@ -138,15 +136,15 @@ export const CommentSection = ({ gameId }: CommentSectionProps) => {
           comments.map((comment) => (
             <div key={comment.id} className="flex gap-4 p-4 rounded-lg bg-gray-800/50">
               <Avatar>
-                <AvatarImage src={comment.user.profile.avatar_url || undefined} />
+                <AvatarImage src={comment.user.avatar_url || undefined} />
                 <AvatarFallback>
-                  {comment.user.profile.username?.[0]?.toUpperCase() || 'U'}
+                  {comment.user.username?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-200">
-                    {comment.user.profile.username || 'Anonymous'}
+                    {comment.user.username || 'Anonymous'}
                   </span>
                   <span className="text-sm text-gray-400">
                     {new Date(comment.created_at).toLocaleDateString()}
