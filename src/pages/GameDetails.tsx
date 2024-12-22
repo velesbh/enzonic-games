@@ -32,6 +32,42 @@ const GameDetails = () => {
     },
   });
 
+  const getFileExtension = (url: string) => {
+    return url?.split('.').pop()?.toLowerCase();
+  };
+
+  const renderGame = () => {
+    if (!game?.game_url) return null;
+
+    const extension = getFileExtension(game.game_url);
+
+    if (extension === 'sb3') {
+      // Render Scratch game in iframe
+      return (
+        <div className="aspect-video w-full">
+          <iframe
+            src={`https://scratch.mit.edu/projects/embed/${game.game_url}`}
+            className="h-full w-full rounded-lg border-0"
+            allowFullScreen
+          />
+        </div>
+      );
+    } else if (extension === 'html') {
+      // Render HTML game in iframe
+      return (
+        <div className="aspect-video w-full">
+          <iframe
+            src={game.game_url}
+            className="h-full w-full rounded-lg border-0"
+            sandbox="allow-scripts allow-same-origin"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen">
@@ -54,6 +90,9 @@ const GameDetails = () => {
     );
   }
 
+  const extension = getFileExtension(game.game_url || '');
+  const isPlayable = extension === 'sb3' || extension === 'html';
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -68,11 +107,13 @@ const GameDetails = () => {
 
         <div className="grid gap-8 md:grid-cols-2">
           <div>
-            <img
-              src={game.thumbnail_url || '/placeholder.svg'}
-              alt={game.title}
-              className="w-full rounded-lg object-cover"
-            />
+            {renderGame() || (
+              <img
+                src={game.thumbnail_url || '/placeholder.svg'}
+                alt={game.title}
+                className="w-full rounded-lg object-cover"
+              />
+            )}
           </div>
 
           <div className="space-y-6">
@@ -86,17 +127,17 @@ const GameDetails = () => {
             <p className="text-gray-300">{game.description}</p>
 
             <div className="flex gap-4">
-              {game.game_type === 'download' ? (
+              {isPlayable ? (
+                <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Play Game
+                </Button>
+              ) : (
                 <Button asChild>
                   <a href={game.game_url} download>
                     <Download className="mr-2 h-4 w-4" />
                     Download Game
                   </a>
-                </Button>
-              ) : (
-                <Button onClick={() => window.open(game.game_url, '_blank')}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Play Game
                 </Button>
               )}
 
