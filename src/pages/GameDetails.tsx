@@ -68,6 +68,20 @@ const GameDetails = () => {
             initialDislikes={dislikes}
             initialIsFavorited={game.favorites?.length > 0}
           />
+
+          {game.game_type === 'scratch' && game.game_url && (
+            <div className="mt-8">
+              <h2 className="text-xl font-bold mb-4">Play Game</h2>
+              <div className="aspect-video w-full">
+                <iframe
+                  src={`https://turbowarp.org/${game.game_url}/embed`}
+                  className="w-full h-full border-0 rounded-lg"
+                  allowFullScreen
+                  allow="gamepad"
+                />
+              </div>
+            </div>
+          )}
           
           <div className="mt-12">
             <CommentSection gameId={game.id} />
