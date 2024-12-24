@@ -20,6 +20,7 @@ const GameEdit = () => {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -32,6 +33,7 @@ const GameEdit = () => {
         .single();
 
       if (error) {
+        console.error('Error fetching game:', error);
         toast({
           title: "Error",
           description: "Failed to fetch game details",
@@ -122,47 +124,31 @@ const GameEdit = () => {
       return;
     }
 
+    setIsDeleting(true);
+
     try {
-      // Delete all related data in the correct order
-      // First, delete comments
-      const { error: commentsError } = await supabase
-        .from('comments')
-        .delete()
-        .eq('game_id', id);
+      // Start a transaction to ensure all deletions happen or none do
+      const { error } = await supabase.rpc('delete_game_with_relations', {
+        game_id: id
+      });
 
-      if (commentsError) throw commentsError;
-
-      // Then, delete reactions
-      const { error: reactionsError } = await supabase
-        .from('game_reactions')
-        .delete()
-        .eq('game_id', id);
-
-      if (reactionsError) throw reactionsError;
-
-      // Then, delete favorites
-      const { error: favoritesError } = await supabase
-        .from('game_favorites')
-        .delete()
-        .eq('game_id', id);
-
-      if (favoritesError) throw favoritesError;
-
-      // Finally, delete the game itself
-      const { error: gameError } = await supabase
-        .from('games')
-        .delete()
-        .eq('id', id);
-
-      if (gameError) throw gameError;
+      if (error) {
+        console.error('Error in delete transaction:', error);
+        throw error;
+      }
 
       // Clean up storage if there are any files
       if (thumbnailUrl) {
         const filePath = thumbnailUrl.split('/').pop();
         if (filePath) {
-          await supabase.storage
+          const { error: storageError } = await supabase.storage
             .from('game-files')
             .remove([`${id}/${filePath}`]);
+          
+          if (storageError) {
+            console.error('Error cleaning up storage:', storageError);
+            // Don't throw here as the game is already deleted
+          }
         }
       }
 
@@ -179,6 +165,8 @@ const GameEdit = () => {
         description: "Failed to delete game",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -253,9 +241,10 @@ const GameEdit = () => {
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
+                disabled={isDeleting}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Game
+                {isDeleting ? 'Deleting...' : 'Delete Game'}
               </Button>
             </div>
           </form>
