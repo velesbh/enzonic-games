@@ -14,6 +14,7 @@ interface GameCardProps {
   initialLikes?: number;
   initialDislikes?: number;
   initialUserReaction?: 'like' | 'dislike' | null;
+  initialIsFavorited?: boolean;
 }
 
 export const GameCard = ({ 
@@ -24,13 +25,15 @@ export const GameCard = ({
   onPlay,
   initialLikes = 0,
   initialDislikes = 0,
-  initialUserReaction = null
+  initialUserReaction = null,
+  initialIsFavorited = false
 }: GameCardProps) => {
   const session = useSession();
   const { toast } = useToast();
   const [likes, setLikes] = useState(initialLikes);
   const [dislikes, setDislikes] = useState(initialDislikes);
   const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(initialUserReaction);
+  const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
 
   const handleReaction = async (type: 'like' | 'dislike') => {
     if (!session) {
@@ -72,7 +75,7 @@ export const GameCard = ({
 
         setUserReaction(type);
         if (type === 'like') setLikes(prev => prev + 1);
-        else setDislikes(prev => prev + 1);
+        else setDislikes(prev => prev - 1);
       }
     } catch (error) {
       console.error('Error handling reaction:', error);

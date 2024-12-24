@@ -14,10 +14,8 @@ interface Comment {
   created_at: string;
   user_id: string;
   user: {
-    profile: {
-      username: string | null;
-      avatar_url: string | null;
-    };
+    username: string | null;
+    avatar_url: string | null;
   };
 }
 
