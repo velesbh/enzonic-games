@@ -20,7 +20,6 @@ const GameEdit = () => {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -33,7 +32,6 @@ const GameEdit = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching game:', error);
         toast({
           title: "Error",
           description: "Failed to fetch game details",
@@ -124,32 +122,30 @@ const GameEdit = () => {
       return;
     }
 
-    setIsDeleting(true);
-
     try {
-      const { error } = await supabase.rpc('delete_game_with_relations', {
-        target_game_id: id // Updated parameter name to match the function
-      });
+      // First, delete all reactions for this game
+      const { error: reactionsError } = await supabase
+        .from('game_reactions')
+        .delete()
+        .eq('game_id', id);
 
-      if (error) {
-        console.error('Error in delete transaction:', error);
-        throw error;
-      }
+      if (reactionsError) throw reactionsError;
 
-      // Clean up storage if there are any files
-      if (thumbnailUrl) {
-        const filePath = thumbnailUrl.split('/').pop();
-        if (filePath) {
-          const { error: storageError } = await supabase.storage
-            .from('game-files')
-            .remove([`${id}/${filePath}`]);
-          
-          if (storageError) {
-            console.error('Error cleaning up storage:', storageError);
-            // Don't throw here as the game is already deleted
-          }
-        }
-      }
+      // Then, delete all favorites for this game
+      const { error: favoritesError } = await supabase
+        .from('game_favorites')
+        .delete()
+        .eq('game_id', id);
+
+      if (favoritesError) throw favoritesError;
+
+      // Finally, delete the game itself
+      const { error: gameError } = await supabase
+        .from('games')
+        .delete()
+        .eq('id', id);
+
+      if (gameError) throw gameError;
 
       toast({
         title: "Success",
@@ -164,8 +160,6 @@ const GameEdit = () => {
         description: "Failed to delete game",
         variant: "destructive",
       });
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -240,10 +234,9 @@ const GameEdit = () => {
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={isDeleting}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {isDeleting ? 'Deleting...' : 'Delete Game'}
+                Delete Game
               </Button>
             </div>
           </form>
