@@ -123,7 +123,16 @@ const GameEdit = () => {
     }
 
     try {
-      // First, delete all reactions for this game
+      // Delete all related data in the correct order
+      // First, delete comments
+      const { error: commentsError } = await supabase
+        .from('comments')
+        .delete()
+        .eq('game_id', id);
+
+      if (commentsError) throw commentsError;
+
+      // Then, delete reactions
       const { error: reactionsError } = await supabase
         .from('game_reactions')
         .delete()
@@ -131,7 +140,7 @@ const GameEdit = () => {
 
       if (reactionsError) throw reactionsError;
 
-      // Then, delete all favorites for this game
+      // Then, delete favorites
       const { error: favoritesError } = await supabase
         .from('game_favorites')
         .delete()
@@ -146,6 +155,16 @@ const GameEdit = () => {
         .eq('id', id);
 
       if (gameError) throw gameError;
+
+      // Clean up storage if there are any files
+      if (thumbnailUrl) {
+        const filePath = thumbnailUrl.split('/').pop();
+        if (filePath) {
+          await supabase.storage
+            .from('game-files')
+            .remove([`${id}/${filePath}`]);
+        }
+      }
 
       toast({
         title: "Success",
