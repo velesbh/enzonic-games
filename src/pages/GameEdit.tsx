@@ -129,7 +129,7 @@ const GameEdit = () => {
     try {
       // Start a transaction to ensure all deletions happen or none do
       const { error } = await supabase.rpc('delete_game_with_relations', {
-        game_id: id
+        game_id: id as string
       });
 
       if (error) {

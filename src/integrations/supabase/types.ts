@@ -176,7 +176,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_game_with_relations: {
+        Args: {
+          game_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
