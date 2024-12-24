@@ -178,7 +178,7 @@ export type Database = {
     Functions: {
       delete_game_with_relations: {
         Args: {
-          game_id: string
+          target_game_id: string
         }
         Returns: undefined
       }

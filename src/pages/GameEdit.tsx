@@ -127,9 +127,8 @@ const GameEdit = () => {
     setIsDeleting(true);
 
     try {
-      // Start a transaction to ensure all deletions happen or none do
       const { error } = await supabase.rpc('delete_game_with_relations', {
-        game_id: id as string
+        target_game_id: id // Updated parameter name to match the function
       });
 
       if (error) {
