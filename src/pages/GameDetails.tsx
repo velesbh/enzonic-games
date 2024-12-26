@@ -1,18 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@supabase/auth-helpers-react";
+import { CommentSection } from "@/components/CommentSection";
 
 const GameDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const session = useSession();
-  const queryClient = useQueryClient();
 
   const { data: game, isLoading } = useQuery({
     queryKey: ['game', id],
@@ -27,39 +27,6 @@ const GameDetails = () => {
       return data;
     },
   });
-
-  const deleteGameMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('games')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Game deleted",
-        description: "The game has been successfully deleted",
-      });
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      navigate('/games');
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete the game",
-        variant: "destructive",
-      });
-      console.error('Error deleting game:', error);
-    },
-  });
-
-  const handleDeleteGame = () => {
-    if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
-      deleteGameMutation.mutate();
-    }
-  };
 
   if (isLoading) {
     return (
@@ -142,6 +109,8 @@ const GameDetails = () => {
               )}
             </div>
           </div>
+
+          <CommentSection gameId={id || ''} />
         </div>
       </main>
     </div>
